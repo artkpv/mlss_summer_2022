@@ -1,0 +1,10 @@
+mnist
+lab3_data
+lab3_data.zip
+.ipynb_checkpoints
+.virtual_documents
+__pychache__
+__pycache__
+auto-mpg.tsv reviews.tsv
+*.tsv
+*.zip
