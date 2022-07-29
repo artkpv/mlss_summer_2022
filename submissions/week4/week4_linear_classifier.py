@@ -480,6 +480,8 @@ def train_linear_classifier(loss_func, W, X, y, learning_rate=1e-3,
     W = 0.000001 * torch.randn(dim, num_classes, device=X.device, dtype=X.dtype)
 
   # Run stochastic gradient descent to optimize W
+  v = 0.0  # Velocity
+  mu = 0.9  # Momentum
   loss_history = []
   for it in range(num_iters):
     X_batch = None
@@ -512,7 +514,8 @@ def train_linear_classifier(loss_func, W, X, y, learning_rate=1e-3,
     # Update the weights using the gradient and the learning rate.          #
     #########################################################################
     # Replace "pass" statement with your code
-    W -= learning_rate * grad
+    v = mu * v  - learning_rate * grad
+    W += v
     #########################################################################
     #                       END OF YOUR CODE                                #
     #########################################################################
@@ -676,28 +679,28 @@ y_train=data_dict['y_train']
 X_val=data_dict['X_val'].double()
 y_val=data_dict['y_val']
 tries = 50
-lrs = loguniform(1, 1000).rvs(size=tries) / 1e4
-rgs = loguniform(1, 1000).rvs(size=tries) / 1e3
+lrs = loguniform(1e-5, 1e-2).rvs(size=tries)
+rgs = loguniform(1e-4, 1.0).rvs(size=tries)
 for lr, rg in zip(lrs, rgs):
-    # Create a new SVM instance
-    svm = LinearSVM()
-    # Train the model with current parameters
-    train_loss = svm.train(X_train, y_train, learning_rate=lr, reg=rg,
-                      num_iters=5000,batch_size=500, verbose=False)
-    # Predict values for training set
-    y_train_pred = svm.predict(X_train)
-    # Calculate accuracy
-    train_accuracy = torch.mean((y_train_pred == y_train).float())
-    # Predict values for validation set
-    y_val_pred = svm.predict(X_val)
-    # Calculate accuracy
-    val_accuracy = torch.mean((y_val_pred == y_val).float())
-    # Save results
-    results[(lr,rg)] = (train_accuracy.cpu(), val_accuracy.cpu())
-    if best_val < val_accuracy:
-        best_val = val_accuracy
-        best_svm = svm
-
+  # Create a new SVM instance
+  svm = LinearSVM()
+  # Train the model with current parameters
+  train_loss = svm.train(X_train, y_train, learning_rate=lr, reg=rg,
+                    num_iters=4000,batch_size=200, verbose=False)
+  # Predict values for training set
+  y_train_pred = svm.predict(X_train)
+  # Calculate accuracy
+  train_accuracy = torch.mean((y_train_pred == y_train).float())
+  # Predict values for validation set
+  y_val_pred = svm.predict(X_val)
+  # Calculate accuracy
+  val_accuracy = torch.mean((y_val_pred == y_val).float())
+  # Save results
+  results[(lr,rg)] = (train_accuracy.cpu(), val_accuracy.cpu())
+  if best_val < val_accuracy:
+      best_val = val_accuracy
+      best_svm = svm
+  
 ################################################################################
 #                              END OF YOUR CODE                                #
 ################################################################################
@@ -1062,14 +1065,14 @@ X_train=data_dict['X_train'].double()
 y_train=data_dict['y_train']
 X_val=data_dict['X_val'].double()
 y_val=data_dict['y_val']
-tries = 50
-lrs = loguniform(1, 1000).rvs(size=tries) / 1e4
-rgs = loguniform(1, 1000).rvs(size=tries) / 1e3
+tries = 10
+lrs = loguniform(1e-3, 1e-1).rvs(size=tries)
+rgs = loguniform(1e-5, 1e-2).rvs(size=tries)
 for lr, rg in zip(lrs, rgs):
     softmax = Softmax()
     # Train the model with current parameters
     train_loss = softmax.train(X_train, y_train, learning_rate=lr, reg=rg,
-                      num_iters=5000,batch_size=200, verbose=False)
+                      num_iters=20000,batch_size=2000, verbose=False)
     # Predict values for training set
     y_train_pred = softmax.predict(X_train)
     # Calculate accuracy

@@ -446,7 +446,11 @@ def nn_train(params, loss_func, pred_func, X, y, X_val, y_val,
   loss_history = []
   train_acc_history = []
   val_acc_history = []
-
+  vW1 = 0.0
+  vW2 = 0.0
+  vb1 = 0.0
+  vb2 = 0.0
+  mu = 0.9  # Momentum
   for it in range(num_iters):
     X_batch = None
     y_batch = None
@@ -475,10 +479,14 @@ def nn_train(params, loss_func, pred_func, X, y, X_val, y_val,
     # stored in the grads dictionary defined above.                         #
     #########################################################################
     # Replace "pass" statement with your code
-    params['W1'] -= learning_rate * grads['W1']
-    params['W2'] -= learning_rate * grads['W2']
-    params['b1'] -= learning_rate * grads['b1']
-    params['b2'] -= learning_rate * grads['b2']
+    vW1 = vW1 * mu  - learning_rate * grads['W1']
+    vW2 = vW2 * mu  - learning_rate * grads['W2']
+    vb1 = vb1 * mu  - learning_rate * grads['b1']
+    vb2 = vb2 * mu  - learning_rate * grads['b2']
+    params['W1'] += vW1
+    params['W2'] += vW2
+    params['b1'] += vb1
+    params['b2'] += vb2
     #########################################################################
     #                             END OF YOUR CODE                          #
     #########################################################################
@@ -909,29 +917,28 @@ best_net = None # store the best model into this
 # Replace "pass" statement with your code
 
 from scipy.stats import loguniform
-lrs = [1.2-e for e in loguniform(0.1, 1.1).rvs(size=5)]
-rgs = loguniform(1e-5, 0.01).rvs(size=5)
-epochsnum = [1_000, 5_000] 
-hidden_sizes = [128, 512] 
+lrs = loguniform(0.095, 0.15).rvs(size=5)
+rgs = loguniform(0.095, 0.15).rvs(size=5)
+epochsnum = [6_000]
+hidden_sizes = [512, 896, 1024, 1152] 
 results = {}
 best_acc = -float('inf')
 # Idea: Consider training quicker (1000 epochs, 128 hs) with diff lr, rg, other.
-for lr in lrs:
-  for rg in rgs:
-    for epochs in  epochsnum:
-      for hs in hidden_sizes:
-        net = TwoLayerNet(3 * 32 * 32, hs, 10, device=data_dict['X_train'].device)
-        stats = net.train(data_dict['X_train'], data_dict['y_train'], data_dict['X_val'], data_dict['y_val'],
-                  num_iters=epochs, batch_size=1000,
-                  learning_rate=lr, learning_rate_decay=0.95,
-                  reg=reg, verbose=False)
-        # Predict on the validation set
-        y_val_pred = net.predict(data_dict['X_val'])
-        val_acc = 100.0 * (y_val_pred == data_dict['y_val']).float().mean().item()
-        print(f'VA: {val_acc:.2f}%. Params: {lr} lr, {rg} rg, {epochs} epochs, {hs} hs.')
-        if best_acc < val_acc:
-          best_acc = val_acc
-          best_net = net
+for lr, rg in zip(lrs, rgs):
+  for epochs in  epochsnum:
+    for hs in hidden_sizes:
+      net = TwoLayerNet(3 * 32 * 32, hs, 10, device=data_dict['X_train'].device)
+      stats = net.train(data_dict['X_train'], data_dict['y_train'], data_dict['X_val'], data_dict['y_val'],
+                num_iters=epochs, batch_size=1000,
+                learning_rate=lr, learning_rate_decay=0.95,
+                reg=reg, verbose=False)
+      # Predict on the validation set
+      y_val_pred = net.predict(data_dict['X_val'])
+      val_acc = 100.0 * (y_val_pred == data_dict['y_val']).float().mean().item()
+      print(f'VA: {val_acc:.2f}%. Params: {lr} lr, {rg} rg, {epochs} epochs, {hs} hs.')
+      if best_acc < val_acc:
+        best_acc = val_acc
+        best_net = net
     
 #################################################################################
 #                               END OF YOUR CODE                                #
